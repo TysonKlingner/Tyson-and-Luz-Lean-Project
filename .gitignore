@@ -1,0 +1,12 @@
+/.lake
+/.lake
+.DS_Store
+lake-manifest.json
+lakefile.toml
+lean-toolchain
+TysonAndLuzLeanProject.lean
+.github/workflows/create-release.yml
+.github/workflows/lean_action_ci.yml
+.github/workflows/update.yml
+TysonAndLuzLeanProject/Basic.lean
+Main.lean
