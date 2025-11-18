@@ -33,20 +33,22 @@ def f (m n : ℕ) :
 
 
 -- Lift to a map on the tensor product
-def lift_f (m n : ℕ) : ZMod m ⊗[ℤ] ZMod n →ₗ[ℤ] ZMod (Nat.gcd m n) :=
+def lift_f (m n : ℕ)  : ZMod m ⊗[ℤ] ZMod n →ₗ[ℤ] ZMod (Nat.gcd m n) :=
 TensorProduct.lift (f m n)
 
 
 /-- Proof that lift_f is surjective -/
-lemma lift_f_surjective (m n : ℕ) :
+lemma lift_f_surjective (m n : ℕ) {hm : m ≠ 0} {hn : n ≠ 0} : -- Modify assumptions.
   Function.Surjective (lift_f m n) := by
   intro z
   -- Any z : ZMod (gcd m n) is the image of some element in ZMod m ⨂ ZMod n.
   let k := z.val
   -- Use generator 1 ⊗ k to hit z
   use (1 : ZMod m) ⊗ₜ (k : ZMod n)
-  -- I think these are the theorems that I want to use but it is not working.
-  simp [lift_f, f, k, ZMod.cast_one, ZMod.cast_mul, ZMod.natCast_zmod_val]
+  simp [lift_f, f, k, Nat.gcd_dvd_left, Nat.gcd_dvd_right]
+  have gcd_ne_zero : m.gcd n ≠ 0 := Nat.gcd_ne_zero_left hm
+  have gcd_ne_zero_inst : NeZero (m.gcd n) := ⟨gcd_ne_zero⟩ -- Why?!
+  exact ZMod.natCast_zmod_val z
 
 /-- Proof that lift_f is injective -/
 lemma lift_f_injective (m n : ℕ) :
