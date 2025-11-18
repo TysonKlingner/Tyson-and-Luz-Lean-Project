@@ -46,6 +46,7 @@ lemma lift_f_surjective (m n : ℕ) {hm : m ≠ 0} {hn : n ≠ 0} : -- Modify as
   -- Use generator 1 ⊗ k to hit z
   use (1 : ZMod m) ⊗ₜ (k : ZMod n)
   simp [lift_f, f, k, Nat.gcd_dvd_left, Nat.gcd_dvd_right]
+  -- New goal: ↑z.val = z
   have gcd_ne_zero : m.gcd n ≠ 0 := Nat.gcd_ne_zero_left hm
   have gcd_ne_zero_inst : NeZero (m.gcd n) := ⟨gcd_ne_zero⟩ -- Why?!
   exact ZMod.natCast_zmod_val z
