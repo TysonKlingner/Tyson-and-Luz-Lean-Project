@@ -37,8 +37,24 @@ def lift_f (m n : ℕ)  : ZMod m ⊗[ℤ] ZMod n →ₗ[ℤ] ZMod (Nat.gcd m n) 
 TensorProduct.lift (f m n)
 
 
+/-- Proof that lift_f is injective -/
+lemma lift_f_injective (m n : ℕ) :
+  Function.Injective (lift_f m n) := by
+  intros a b h
+  induction a using TensorProduct.induction_on with
+  | zero =>
+      -- handle a = 0
+      sorry
+  | tmul a₁ a₂ =>
+      -- handle pure tensor case a = (a₁ ⊗ a₂)
+      sorry
+  | add a₁ a₂ ha₁ ha₂ =>
+      -- handle sum case a = a₁ + a₂
+      sorry
+
+
 /-- Proof that lift_f is surjective -/
-lemma lift_f_surjective (m n : ℕ) {hm : m ≠ 0} {hn : n ≠ 0} : -- Modify assumptions.
+lemma lift_f_surjective (m n : ℕ) (h : m ≠ 0 ∨ n ≠ 0) : -- Modify assumptions.
   Function.Surjective (lift_f m n) := by
   intro z
   -- Any z : ZMod (gcd m n) is the image of some element in ZMod m ⨂ ZMod n.
@@ -47,19 +63,30 @@ lemma lift_f_surjective (m n : ℕ) {hm : m ≠ 0} {hn : n ≠ 0} : -- Modify as
   use (1 : ZMod m) ⊗ₜ (k : ZMod n)
   simp [lift_f, f, k, Nat.gcd_dvd_left, Nat.gcd_dvd_right]
   -- New goal: ↑z.val = z
-  have gcd_ne_zero : m.gcd n ≠ 0 := Nat.gcd_ne_zero_left hm
-  have gcd_ne_zero_inst : NeZero (m.gcd n) := ⟨gcd_ne_zero⟩ -- Why?!
+  -- Proving m.gcd n ≠ 0.
+  have gcd_not_zero :
+  m.gcd n ≠ 0 := by
+    by_cases hm : (m ≠ 0)
+      -- Positive case (m ≠ 0)
+    · exact Nat.gcd_ne_zero_left hm
+      -- Negative case (m = 0)
+    · have hn: n ≠ 0 := Or.resolve_left h hm
+      exact Nat.gcd_ne_zero_right hn
+
+  have : NeZero (m.gcd n) := ⟨gcd_not_zero⟩
+  -- Apply this result that requires m.gcd n ≠ 0 to close the goal.
   exact ZMod.natCast_zmod_val z
 
-/-- Proof that lift_f is injective -/
-lemma lift_f_injective (m n : ℕ) :
-  Function.Injective (lift_f m n) := by
-  intros a b h
-  -- Let x₁ x₂ in ZMod m and y₁ y₂ in ZMod n.
-  -- Assume f(x₁ ⨂ y₁) = f(x₂ ⨂ y₂) = k.
-  -- Then (x₁ ⨂ x₂) = (1 ⨂ x₁x₂) = (1 ⨂ f(x₁ ⨂ x₂))
-  -- Similary for the other term. Conclude from assumption.
-  sorry
+
+lemma lift_f_bijective (m n : ℕ) (h : m ≠ 0 ∨ n ≠ 0) :
+  Function.Bijective (lift_f m n) := by
+  use lift_f_injective m n
+  use lift_f_surjective m n h
+
+-- It seems like we don't need this anymore.
+def inv_f (m n : ℕ) : ZMod (Nat.gcd m n) → ZMod m ⊗[ℤ] ZMod n :=
+  (fun x =>
+      ((1 : ZMod m) ⊗ₜ (x.val : ZMod n)))
 
 
 -- Outline of the final linear equivalence
@@ -67,10 +94,9 @@ lemma lift_f_injective (m n : ℕ) :
 Canonical isomorphism:
 ZMod m ⊗ ZMod n ≃ₗ[ℤ] ZMod (gcd m n)
 -/
-def zmod_tensor_zmod (m n : ℕ) : ZMod m ⊗[ℤ] ZMod n ≃ₗ[ℤ] ZMod (Nat.gcd m n) :=
-LinearEquiv.ofBijective (lift_f m n)
-  (by lift_f_injective m n)
-  (by lift_f_surjective m n)
+noncomputable def zmod_tensor_zmod (m n : ℕ) (h : m ≠ 0 ∨ n ≠ 0): ZMod m ⊗[ℤ] ZMod n ≃ₗ[ℤ] ZMod (Nat.gcd m n) :=
+LinearEquiv.ofBijective (lift_f m n) (lift_f_bijective m n h)
 
-theorem TensorRingIso (m n : ℕ) : Nonempty (((ZMod n)⊗[ℤ](ZMod m)) ≃ₗ[ℤ] ZMod (Nat.gcd n m)):= by
-  use zmod_tensor_zmod n m
+theorem TensorRingIso (m n : ℕ) (h : m ≠ 0 ∨ n ≠ 0): Nonempty (ZMod m ⊗[ℤ] ZMod n ≃ₗ[ℤ] ZMod (Nat.gcd m n)) := by
+  apply Nonempty.intro
+  exact zmod_tensor_zmod m n h
