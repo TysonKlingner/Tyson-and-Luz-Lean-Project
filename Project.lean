@@ -36,14 +36,31 @@ def f (m n : ℕ) :
 def lift_f (m n : ℕ) : ZMod m ⊗[ℤ] ZMod n →ₗ[ℤ] ZMod (Nat.gcd m n) :=
 TensorProduct.lift (f m n)
 
--- I don't think this lemma is needed.
--- lemma rewriteZmod (m n : ℕ) (a b c : ZMod m ⊗[ℤ] ZMod n) :
-  --(lift_f m n) a + (lift_f m n) b = (lift_f m n) c →
-  --(lift_f m n) a = (lift_f m n) c - (lift_f m n) b := by
-    --sorry
+def g (m n : ℕ) :
+    ZMod (Nat.gcd m n) -> (ZMod m ⊗[ℤ] ZMod n) :=
+    (fun x => (x.val * ((m / m.gcd n) : ZMod m))⊗ₜ(1 : ZMod n))
+
+lemma inverse_on_simp_tensor (m n : ℕ) (x : ZMod m) (y : ZMod n) :
+  (g m n) ((lift_f m n) (x ⊗ₜ[ℤ] y)) = x ⊗ₜ[ℤ] y := by
+    let u : ZMod (m.gcd n) := ZMod.castHom (Nat.gcd_dvd_left m n) _ x
+    let v : ZMod (m.gcd n) := ZMod.castHom (Nat.gcd_dvd_right m n) _ y
+    have h : (lift_f m n) (x ⊗ₜ[ℤ] y) = (f m n) x y := by
+      simp [lift_f]
+    have h' : (f m n) x y = u * v := by
+      simp [f]
+      rfl
+    have h₂ : (g m n) (u * v) = x ⊗ₜ[ℤ] y := by
+      simp [g]
+      simp [ZMod.val_mul u v]
+      simp [Nat.mul_mod]
+      sorry
+    exact h₂
 
 lemma rewritezero (m n : ℕ) : 0 = (lift_f m n) 0 := by
   exact (lift_f m n).map_zero
+
+lemma g_zero (m n : ℕ) : (g m n) 0 = 0 := by
+  simp [g]
 
 lemma kernel_of_lift_f (m n :  ℕ) (x : ZMod m ⊗[ℤ] ZMod n) :
   (lift_f m n) x = 0 → x = 0 := by
@@ -52,12 +69,11 @@ lemma kernel_of_lift_f (m n :  ℕ) (x : ZMod m ⊗[ℤ] ZMod n) :
     | zero =>
         exact rfl
     | tmul a₁ a₂ =>
-      -- have h' : (f m n) a₁ a₂ = 0 := by
-        -- simpa [lift_f] using h
-      -- simp [f] at h'
-      simp [lift_f] at h
-      simp [f] at h
-      sorry
+        have h' : (g m n) ((lift_f m n) (a₁ ⊗ₜ[ℤ] a₂)) = (g m n) 0 := by
+          congr
+        simp [inverse_on_simp_tensor] at h'
+        simp [g_zero] at h'
+        exact h'
     | add a₁ a₂ ha₁ ha₂ =>
       simp [lift_f] at h
       rw [add_eq_zero_iff_eq_neg] at h
