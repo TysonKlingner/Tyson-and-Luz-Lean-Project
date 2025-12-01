@@ -33,24 +33,69 @@ def f (m n : ℕ) :
 
 
 -- Lift to a map on the tensor product
-def lift_f (m n : ℕ)  : ZMod m ⊗[ℤ] ZMod n →ₗ[ℤ] ZMod (Nat.gcd m n) :=
+def lift_f (m n : ℕ) : ZMod m ⊗[ℤ] ZMod n →ₗ[ℤ] ZMod (Nat.gcd m n) :=
 TensorProduct.lift (f m n)
 
+-- I don't think this lemma is needed.
+-- lemma rewriteZmod (m n : ℕ) (a b c : ZMod m ⊗[ℤ] ZMod n) :
+  --(lift_f m n) a + (lift_f m n) b = (lift_f m n) c →
+  --(lift_f m n) a = (lift_f m n) c - (lift_f m n) b := by
+    --sorry
 
+lemma rewritezero (m n : ℕ) : 0 = (lift_f m n) 0 := by
+  exact (lift_f m n).map_zero
+
+lemma kernel_of_lift_f (m n :  ℕ) (x : ZMod m ⊗[ℤ] ZMod n) :
+  (lift_f m n) x = 0 → x = 0 := by
+    intro h
+    induction x using TensorProduct.induction_on with
+    | zero =>
+        exact rfl
+    | tmul a₁ a₂ =>
+      -- have h' : (f m n) a₁ a₂ = 0 := by
+        -- simpa [lift_f] using h
+      -- simp [f] at h'
+      simp [lift_f] at h
+      simp [f] at h
+      sorry
+    | add a₁ a₂ ha₁ ha₂ =>
+      simp [lift_f] at h
+      rw [add_eq_zero_iff_eq_neg] at h
+      sorry
 /-- Proof that lift_f is injective -/
 lemma lift_f_injective (m n : ℕ) :
   Function.Injective (lift_f m n) := by
   intros a b h
   induction a using TensorProduct.induction_on with
   | zero =>
+      simp [map_zero] at h
+      exact Eq.symm (kernel_of_lift_f m n b (id (Eq.symm h)))
       -- handle a = 0
-      sorry
   | tmul a₁ a₂ =>
       -- handle pure tensor case a = (a₁ ⊗ a₂)
-      sorry
+      rw [←(sub_eq_zero)] at h
+      rw [sub_eq_add_neg] at h
+      rw [←(lift_f m n).map_neg] at h
+      rw [←(lift_f m n).map_add] at h
+      apply kernel_of_lift_f at h
+      exact sub_eq_zero.mp h
+      -- apply rewritezero at h
   | add a₁ a₂ ha₁ ha₂ =>
       -- handle sum case a = a₁ + a₂
-      sorry
+      rw [←sub_eq_zero] at h
+      rw [sub_eq_add_neg] at h
+      rw [←(lift_f m n).map_neg] at h
+      rw [←(lift_f m n).map_add] at h
+      apply kernel_of_lift_f at h
+      exact sub_eq_zero.mp h
+      --simp [map_add] at h
+      --apply rewriteZmod at h
+      --rw [sub_eq_add_neg] at h
+      --rw [←(lift_f m n).map_neg] at h
+      --rw [←(lift_f m n).map_add] at h
+      -- apply (eq_sub_iff_add_eq) at h
+      --
+
 
 
 /-- Proof that lift_f is surjective -/
@@ -83,20 +128,16 @@ lemma lift_f_bijective (m n : ℕ) (h : m ≠ 0 ∨ n ≠ 0) :
   use lift_f_injective m n
   use lift_f_surjective m n h
 
--- It seems like we don't need this anymore.
-def inv_f (m n : ℕ) : ZMod (Nat.gcd m n) → ZMod m ⊗[ℤ] ZMod n :=
-  (fun x =>
-      ((1 : ZMod m) ⊗ₜ (x.val : ZMod n)))
-
-
 -- Outline of the final linear equivalence
 /--
 Canonical isomorphism:
 ZMod m ⊗ ZMod n ≃ₗ[ℤ] ZMod (gcd m n)
 -/
-noncomputable def zmod_tensor_zmod (m n : ℕ) (h : m ≠ 0 ∨ n ≠ 0): ZMod m ⊗[ℤ] ZMod n ≃ₗ[ℤ] ZMod (Nat.gcd m n) :=
-LinearEquiv.ofBijective (lift_f m n) (lift_f_bijective m n h)
+noncomputable def zmod_tensor_zmod (m n : ℕ) (h : m ≠ 0 ∨ n ≠ 0) :
+  ZMod m ⊗[ℤ] ZMod n ≃ₗ[ℤ] ZMod (Nat.gcd m n) :=
+    LinearEquiv.ofBijective (lift_f m n) (lift_f_bijective m n h)
 
-theorem TensorRingIso (m n : ℕ) (h : m ≠ 0 ∨ n ≠ 0): Nonempty (ZMod m ⊗[ℤ] ZMod n ≃ₗ[ℤ] ZMod (Nat.gcd m n)) := by
-  apply Nonempty.intro
-  exact zmod_tensor_zmod m n h
+theorem TensorRingIso (m n : ℕ) (h : m ≠ 0 ∨ n ≠ 0) :
+  Nonempty (ZMod m ⊗[ℤ] ZMod n ≃ₗ[ℤ] ZMod (Nat.gcd m n)) := by
+    apply Nonempty.intro
+    exact zmod_tensor_zmod m n h
